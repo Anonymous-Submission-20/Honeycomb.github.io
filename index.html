@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Honeycomb: Constant-Size Scene Memory for Video World Models</title>
+  <meta name="description" content="Honeycomb: a video world model with HexMemory, a fixed-size six-plane scene memory.">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/index.css">
+</head>
+<body>
+
+<!-- ============================ HEADER ============================ -->
+<section class="hero">
+  <div class="container narrow center">
+    <h1 class="title">Honeycomb: Constant-Size Scene Memory<br>for Video World Models</h1>
+    <p class="authors">Anonymous authors</p>
+    <p class="venue">Paper under double-blind review</p>
+    <div class="links">
+      <a class="btn" href="#">Paper (PDF)</a>
+      <a class="btn" href="https://github.com/Anonymous-Submission-20/Honeycomb">Code</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TEASER ============================ -->
+<section class="section">
+  <div class="container">
+    <div class="ph ph-video" style="aspect-ratio: 16/6;">
+      <span class="ph-tag">TEASER VIDEO · based on Fig. 1</span>
+      <span class="ph-desc">Input frame → generated frames along an out-and-back camera path → revisit frame.
+        Side by side: Honeycomb / Spatia / LSM-World at the revisit.</span>
+      <span class="ph-file">resources/teaser.mp4</span>
+    </div>
+    <p class="caption center">Given a single input frame and a camera trajectory that moves away and returns,
+      Honeycomb generates a video whose final frame is consistent with the input frame.</p>
+  </div>
+</section>
+
+<!-- ============================ ABSTRACT ============================ -->
+<section class="section">
+  <div class="container narrow">
+    <h2>Abstract</h2>
+    <p class="justify">
+      Video world models require persistent scene memory to maintain consistency during long-horizon video
+      generation. Existing spatial memories accumulate RGB observations or latent features, increasing storage
+      requirements as generation proceeds. We introduce Honeycomb, a video world model built on HexMemory, our
+      proposed low-rank representation for storing scene features in a fixed-size memory with a total of six
+      spatial and spatiotemporal planes. A feed-forward writer maps each generated chunk into new plane features.
+      As the spatial coverage or temporal range expands, we warp the previous planes while preserving their
+      dimensions, then fuse them with the new features through confidence-weighted pooling and a learned residual
+      correction. A reader retrieves latents from HexMemory to condition subsequent video generation. The writer
+      processes only observations from the new chunk, avoiding per-scene optimization and repeated processing of
+      the full history. Experiments on WorldScore and RealEstate10K demonstrate strong video generation quality
+      and robust revisit consistency while keeping HexMemory feature storage constant throughout generation.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ METHOD ============================ -->
+<section class="section alt">
+  <div class="container">
+    <h2 class="center">Method</h2>
+    <div class="ph ph-img" style="aspect-ratio: 16/7;">
+      <span class="ph-tag">FIGURE · Fig. 3 (pipeline)</span>
+      <span class="ph-desc">(a) initialize HexMemory from the input frame, (b) read to condition a chunk, (c) write back into the same tensors.</span>
+      <span class="ph-file">resources/method/pipeline.png</span>
+    </div>
+    <p class="caption center">Honeycomb initializes a fixed-size HexMemory, reads it to condition each generated chunk,
+      and writes new observations back into the same tensors.</p>
+
+    <div class="grid-2">
+      <div>
+        <div class="ph ph-img" style="aspect-ratio: 4/3;">
+          <span class="ph-tag">FIGURE · Fig. 2</span>
+          <span class="ph-desc">Memory design: Spatia (RGB point cloud) vs LSM-World (latent points) vs Honeycomb (fixed-size planes).</span>
+          <span class="ph-file">resources/method/memory_comparison.png</span>
+        </div>
+        <p class="caption">Other memories grow with every write; HexMemory stays the same size.</p>
+      </div>
+      <div>
+        <div class="ph ph-img" style="aspect-ratio: 4/3;">
+          <span class="ph-tag">FIGURE · Fig. 4</span>
+          <span class="ph-desc">Bilinear splatting in the feed-forward writer.</span>
+          <span class="ph-file">resources/method/splatting.png</span>
+        </div>
+        <p class="caption">Each point's contribution is spread over the four neighbouring cells on all six planes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HEXMEMORY VISUALIZATION (headline) ============================ -->
+<section class="section">
+  <div class="container">
+    <h2 class="center">Inside HexMemory</h2>
+    <p class="center lead">Three spatial planes (XY, XZ, YZ) and three spatiotemporal planes (XT, YT, ZT),
+      written chunk by chunk at a fixed size.</p>
+
+    <div class="ph ph-video" style="aspect-ratio: 16/8;">
+      <span class="ph-tag">HEADLINE VIDEO · animated Fig. 6</span>
+      <span class="ph-desc">Left: generated video playing chunk by chunk. Right: 6 planes updating in sync
+        (init → chunk 1 → … → chunk 4), with dashed boundary showing the warped previous extent.</span>
+      <span class="ph-file">resources/hexmemory/write_animation.mp4</span>
+    </div>
+
+    <!-- Tabs: feature PCA / confidence / temporal XT -->
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="pca">Feature PCA</button>
+      <button class="tab" data-tab="conf">Confidence</button>
+      <button class="tab" data-tab="xt">Temporal XT plane</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-pca">
+      <div class="ph ph-img" style="aspect-ratio: 16/7;">
+        <span class="ph-tag">FIGURE · Fig. 12 (+ Fig. 6)</span>
+        <span class="ph-desc">Per-plane PCA→RGB, fixed basis, columns = init + 4 chunks.
+          Ideally one image per step so the slider below can scrub through them.</span>
+        <span class="ph-file">resources/hexmemory/pca_step{0..4}.png</span>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-conf">
+      <div class="ph ph-img" style="aspect-ratio: 16/7;">
+        <span class="ph-tag">FIGURE · Fig. 11</span>
+        <span class="ph-desc">Confidence maps log(1 + N) per plane, shared colour scale, init + 4 chunks.</span>
+        <span class="ph-file">resources/hexmemory/conf_step{0..4}.png</span>
+      </div>
+    </div>
+    <div class="tab-panel" id="tab-xt">
+      <div class="ph ph-img" style="aspect-ratio: 16/7;">
+        <span class="ph-tag">FIGURE · Fig. 10</span>
+        <span class="ph-desc">XT plane: temporal range expands and is resampled into the same grid; annotated RGB views.</span>
+        <span class="ph-file">resources/hexmemory/xt_step{0..4}.png</span>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <label for="step">Memory state:</label>
+      <input type="range" id="step" min="0" max="4" value="0">
+      <span id="step-label">init</span>
+    </div>
+    <p class="caption center">Memory size is identical at every step; only its contents and coordinate range change.</p>
+  </div>
+</section>
+
+<!-- ============================ REVISIT ============================ -->
+<section class="section alt">
+  <div class="container">
+    <h2 class="center">Closed-Loop Revisit</h2>
+    <p class="center lead">The camera moves away and returns to the starting pose. The final frame should match the first.</p>
+
+    <div class="selector">
+      <label for="revisit-set">Dataset:</label>
+      <select id="revisit-set">
+        <option>WorldScore</option>
+        <option>RealEstate10K</option>
+      </select>
+      <label for="revisit-clip">Example:</label>
+      <select id="revisit-clip">
+        <option>Example 1</option><option>Example 2</option><option>Example 3</option><option>Example 4</option>
+      </select>
+    </div>
+
+    <div class="grid-4">
+      <div>
+        <div class="ph ph-video" style="aspect-ratio: 16/9;">
+          <span class="ph-tag">INPUT</span>
+          <span class="ph-file">resources/revisit/{set}/{id}/input.png</span>
+        </div>
+        <p class="col-label">Input frame</p>
+      </div>
+      <div>
+        <div class="ph ph-video" style="aspect-ratio: 16/9;">
+          <span class="ph-tag">VIDEO</span>
+          <span class="ph-file">resources/revisit/{set}/{id}/spatia.mp4</span>
+        </div>
+        <p class="col-label">Spatia</p>
+      </div>
+      <div>
+        <div class="ph ph-video" style="aspect-ratio: 16/9;">
+          <span class="ph-tag">VIDEO</span>
+          <span class="ph-file">resources/revisit/{set}/{id}/lsm.mp4</span>
+        </div>
+        <p class="col-label">LSM-World</p>
+      </div>
+      <div>
+        <div class="ph ph-video ours" style="aspect-ratio: 16/9;">
+          <span class="ph-tag">VIDEO</span>
+          <span class="ph-file">resources/revisit/{set}/{id}/honeycomb.mp4</span>
+        </div>
+        <p class="col-label"><b>Honeycomb (ours)</b></p>
+      </div>
+    </div>
+    <p class="caption center">Source clips: Fig. 5 and Fig. 7 (WorldScore, 3 examples), Fig. 8 (RealEstate10K, 4 examples).
+      Videos synchronized; last frame held for 1 s to compare against the input.</p>
+  </div>
+</section>
+
+<!-- ============================ NVS ============================ -->
+<section class="section">
+  <div class="container">
+    <h2 class="center">Long-Horizon Novel-View Synthesis</h2>
+    <p class="center lead">Single input image and a RealEstate10K camera trajectory.</p>
+
+    <div class="grid-nvs">
+      <div class="ph ph-img" style="aspect-ratio: 1/1;">
+        <span class="ph-tag">TRAJECTORY</span>
+        <span class="ph-file">resources/nvs/{id}/traj.png</span>
+      </div>
+      <div class="ph ph-img" style="aspect-ratio: 16/9;">
+        <span class="ph-tag">INPUT</span>
+        <span class="ph-file">resources/nvs/{id}/input.png</span>
+      </div>
+      <div class="ph ph-video ours" style="aspect-ratio: 16/9;">
+        <span class="ph-tag">VIDEO</span>
+        <span class="ph-file">resources/nvs/{id}/honeycomb.mp4</span>
+      </div>
+    </div>
+    <p class="caption center">Source: Fig. 9. Rows = examples (4–6); consider a carousel if more than three.</p>
+  </div>
+</section>
+
+<!-- ============================ RESULTS ============================ -->
+<section class="section alt">
+  <div class="container">
+    <h2 class="center">Quantitative Results</h2>
+    <div class="grid-2">
+      <div>
+        <div class="ph ph-table" style="aspect-ratio: 4/3;">
+          <span class="ph-tag">TABLE · Table 1</span>
+          <span class="ph-desc">WorldScore (Average / Static / Dynamic + sub-metrics). HTML table, ours highlighted.</span>
+        </div>
+      </div>
+      <div>
+        <div class="ph ph-table" style="aspect-ratio: 4/3;">
+          <span class="ph-tag">TABLE · Table 2</span>
+          <span class="ph-desc">RE10K NVS (PSNR / SSIM / LPIPS) and WorldScore closed-loop. HTML table, ours highlighted.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BIBTEX ============================ -->
+<section class="section">
+  <div class="container narrow">
+    <h2>BibTeX</h2>
+    <pre><code>@inproceedings{anonymous2027honeycomb,
+  title     = {Honeycomb: Constant-Size Scene Memory for Video World Models},
+  author    = {Anonymous},
+  booktitle = {Under review},
+  year      = {2027}
+}</code></pre>
+  </div>
+</section>
+
+<script>
+  // Tabs
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
+      t.classList.add('active');
+      document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    });
+  });
+  // Memory-state slider (label only in the wireframe)
+  var labels = ['init', 'chunk 1', 'chunk 2', 'chunk 3', 'chunk 4'];
+  var step = document.getElementById('step');
+  step.addEventListener('input', function () {
+    document.getElementById('step-label').textContent = labels[step.value];
+  });
+</script>
+</body>
+</html>
