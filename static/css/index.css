@@ -162,10 +162,10 @@ pre {
 .teaser #cloud canvas { display: block; }
 .teaser .hint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: .8rem;
                 pointer-events: none; background: rgba(255,255,255,.85); padding: 1px 8px; border-radius: 4px; white-space: nowrap; }
-.teaser .mem { position: relative; margin-top: 30px; padding: 18px 10px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.teaser .mem { position: relative; margin-top: 30px; padding: 30px 10px 10px; border: 1px solid var(--line); border-radius: 10px; }
 .teaser .memtitle { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); margin: 0; padding: 0 12px; background: #fff;
                     font-family: 'Google Sans', sans-serif; font-size: 1.2rem; font-weight: 600; white-space: nowrap; }
-.teaser .spatial { display: flex; gap: 14px; }   /* plane widths set in JS so all three share one height */
+.teaser .spatial { display: flex; gap: 14px; margin-top: 14px; }   /* plane widths set in JS so all three share one height */
 .teaser figure { margin: 0; text-align: center; }
 .teaser .spatial canvas { image-rendering: pixelated; border: 1px solid #ccc; display: block; }
 .teaser .st { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 14px; }
