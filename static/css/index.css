@@ -177,3 +177,27 @@ pre {
   .teaser .top { grid-template-columns: 1fr; }
   .teaser .st { grid-template-columns: 1fr; }
 }
+
+/* Title: a bee that flies in and lands at the top-left of the H in Honeycomb */
+.brand { position: relative; display: inline-block; color: #A66B00; }
+.bee { position: absolute; left: -0.78em; top: -0.52em; width: 1.05em; height: .73em; overflow: visible; transform-origin: 60% 80%;
+       animation: bee-land 2.6s cubic-bezier(.34,.12,.2,1) .4s both; }
+.bee-wings { transform-origin: 14px 6px; animation: bee-flutter 2s ease-in-out 0s infinite; }
+@keyframes bee-land {
+  0%   { opacity: 0; transform: translate(-190px, -80px) rotate(16deg) scale(.85); }
+  12%  { opacity: 1; }
+  45%  { transform: translate(-78px, 22px) rotate(-8deg) scale(1); }
+  72%  { transform: translate(-20px, -24px) rotate(8deg) scale(1); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-12deg) scale(1); }
+}
+/* quick flutter while flying in, then a gentle one that keeps going */
+@keyframes bee-flutter {
+  0%, 100% { transform: scaleY(1); }
+  6%   { transform: scaleY(.55); }
+  12%  { transform: scaleY(1); }
+  18%  { transform: scaleY(.6); }
+  24%  { transform: scaleY(1); }
+  60%  { transform: scaleY(.85); }
+  70%  { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) { .bee { animation: none; } .bee-wings { animation: none; } }
